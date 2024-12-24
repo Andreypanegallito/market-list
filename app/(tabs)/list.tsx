@@ -1,20 +1,24 @@
 import React, { useState } from "react";
-import { View, Button, Text, StyleSheet, useColorScheme } from "react-native";
 import {
-  GestureHandlerRootView,
-  ScrollView,
+  View,
+  Button,
+  Text,
+  StyleSheet,
+  useColorScheme,
+  FlatList,
+  TouchableOpacity,
   TextInput,
-} from "react-native-gesture-handler";
-import { Table, Row } from "react-native-table-component";
+} from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export default function ListScreen() {
   const [item, setItem] = useState("");
   const [qtd, setQtd] = useState(0);
-  const [items, setItems] = useState<string[]>([]);
-  const tableData = items.map((item, index) => [index + 1, item]);
+  const [items, setItems] = useState<{ nome: string; quantidade: number }[]>(
+    []
+  );
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const colorScheme = useColorScheme();
-
-  const teste = [];
 
   const styles = StyleSheet.create({
     container: {
@@ -32,7 +36,7 @@ export default function ListScreen() {
       fontSize: 18,
       width: "100%",
       height: "20%",
-      marginTop: 10,
+      marginTop: 200,
       marginBottom: 10,
     },
     title: {
@@ -63,20 +67,66 @@ export default function ListScreen() {
       paddingHorizontal: 8,
       color: colorScheme === "dark" ? "#fff" : "#353636",
     },
-    listItem: { padding: 16, borderBottomWidth: 1, borderBottomColor: "#ccc" },
-    head: { height: 40, backgroundColor: "#f1f8ff", padding: 6 },
-    wrapper: { flexDirection: "row" },
-    row: { flexDirection: "row" },
-    text: { margin: 6, color: colorScheme === "dark" ? "#fff" : "#353636" },
-    tableBorder: { borderWidth: 1, borderColor: "#c8e1ff" },
+    row: {
+      flexDirection: "row",
+      padding: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: "#ccc",
+    },
+    headerRow: {
+      flexDirection: "row",
+      padding: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: "#ccc",
+      backgroundColor: "#666",
+    },
+    cell: {
+      flex: 1,
+      color: "#fff",
+      textAlign: "center",
+    },
+    headerCell: {
+      flex: 1,
+      fontWeight: "bold",
+      color: "#fff",
+      textAlign: "center",
+    },
+    button: {
+      margin: 4,
+      padding: 4,
+      backgroundColor: "red",
+      borderRadius: 4,
+    },
+    buttonText: {
+      color: "#fff",
+      textAlign: "center",
+    },
   });
 
   const addItem = () => {
-    if (item.trim().length > 0) {
-      teste.push(item);
-      setItems([...items, item]);
+    if (item.trim().length > 0 && qtd > 0) {
+      if (editingIndex === null) {
+        setItems([...items, { nome: item, quantidade: qtd }]);
+      } else {
+        const updatedItems = [...items];
+        updatedItems[editingIndex] = { nome: item, quantidade: qtd };
+        setItems(updatedItems);
+        setEditingIndex(null);
+      }
       setItem("");
+      setQtd(0);
     }
+  };
+
+  const deleteItem = (index: number) => {
+    const updatedItems = items.filter((_, i) => i !== index);
+    setItems(updatedItems);
+  };
+
+  const editItem = (index: number) => {
+    setItem(items[index].nome);
+    setQtd(items[index].quantidade);
+    setEditingIndex(index);
   };
 
   return (
@@ -106,18 +156,50 @@ export default function ListScreen() {
               keyboardType="numeric"
             />
           </View>
-          <Button title="Adicionar" onPress={addItem} />
+          <Button
+            title={editingIndex === null ? "Adicionar" : "Alterar"}
+            onPress={addItem}
+          />
 
-          <ScrollView></ScrollView>
+          {items.length > 0 && (
+            <Text style={[styles.title, { marginTop: 20 }]}>
+              Itens na lista
+            </Text>
+          )}
 
-          <ScrollView>
-            <Table borderStyle={styles.tableBorder}>
-              <Row data={["ID", "Produto"]} style={styles.head} />
-              {tableData.map((rowData, index) => (
-                <Row key={index} data={rowData} textStyle={styles.text} />
-              ))}
-            </Table>
-          </ScrollView>
+          <View>
+            {items.length > 0 && (
+              <View style={styles.headerRow}>
+                <Text style={styles.headerCell}>Nome</Text>
+                <Text style={styles.headerCell}>Quantidade</Text>
+                <Text style={styles.headerCell}>Alterar</Text>
+                <Text style={styles.headerCell}>Excluir</Text>
+              </View>
+            )}
+
+            <FlatList
+              data={items}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item, index }) => (
+                <View style={styles.row}>
+                  <Text style={styles.cell}>{item.nome}</Text>
+                  <Text style={styles.cell}>{item.quantidade}</Text>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => editItem(index)}
+                  >
+                    <Text style={styles.buttonText}>Alterar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => deleteItem(index)}
+                  >
+                    <Text style={styles.buttonText}>Excluir</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+          </View>
         </View>
       </View>
     </GestureHandlerRootView>
